@@ -1,3 +1,0 @@
-workclass 可能为空
-occupation 可能为空
-native-country 可能为空
