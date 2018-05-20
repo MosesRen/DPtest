@@ -1,5 +1,5 @@
 
-
+from collections import Counter
 import numpy as np
 from scipy.stats import mode
 from utilities import shuffle_in_unison
@@ -53,16 +53,30 @@ class RandomForestClassifier(object):
             tree.fit(X_subset, y_subset)
             self.forest.append(tree)
 
+    def laplacenoise(self,epsilon):
+        return np.random.laplace(0., 1/epsilon, 1)[0]
 
     def predict(self, X):
         """ Predict the class of each sample in X. """
         n_samples = X.shape[0]
         n_trees = len(self.forest)
         predictions = np.empty([n_trees, n_samples])
+        # result = np.empty([n_samples])
+        # dict_add = {}
         for i in range(n_trees):
             predictions[i] = self.forest[i].predict(X)
-
+        # for j in range(n_samples):
+        #     distribution = Counter(predictions.T[j])
+        #     dict_list = list(distribution.items())
+        #     for y, num_y in dict_list:
+        #         if epsilon == 0.0:
+        #             dict_add[y] = num_y
+        #         else:
+        #             dict_add[y] = num_y +self.laplacenoise(epsilon)
+        #     result[j] = int(sorted(dict_add.items(), key = lambda s:s[1], reverse=True)[0][0])
         return mode(predictions)[0][0]
+        # return result
+
 
 
     def score(self, X, y):

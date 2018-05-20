@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pandas as pd
 from scipy.stats import mode
-from utilities import information_gain, entropy
+from utilities import information_gain, entropy, gini_index, gini
 from sklearn.metrics import accuracy_score 
 
 class DecisionTreeClassifier(object):
@@ -30,18 +30,22 @@ class DecisionTreeClassifier(object):
         """
 
         self.max_features = max_features
+        #lambda表达式 传入f(x)=x
         self.max_depth = max_depth
+        #最大深度
         self.min_samples_split = min_samples_split
-
+        #一个节点中需要分割的最小样本数
 
     def fit(self, X, y):
         """ Builds the tree by chooseing decision rules for each node based on
         the data. """
 
         n_features = X.shape[1]
+        #shape样本的行和列
         n_sub_features = int(self.max_features(n_features))
+        #子特征数
         feature_indices = random.sample(list(range(n_features)), n_sub_features)
-        
+        #从样本的特征随机抽取n_sub_features个样本
         self.trunk = self.build_tree(X, y, feature_indices, 0)
 
 
@@ -59,7 +63,6 @@ class DecisionTreeClassifier(object):
                 else:
                     node = node.branch_false
             y[j] = node
-
         return y
 
 
@@ -68,9 +71,9 @@ class DecisionTreeClassifier(object):
 
         if depth is self.max_depth or len(y) < self.min_samples_split or entropy(y) is 0:
             return mode(y)[0][0]
-        
+        #判断是否满足停止条件
         feature_index, threshold = find_split(X, y, feature_indices)
-
+        #寻找最佳分割点
         X_true, y_true, X_false, y_false = split(X, y, feature_index, threshold)
         if y_true.shape[0] is 0 or y_false.shape[0] is 0:
             return mode(y)[0][0]
@@ -84,21 +87,23 @@ class DecisionTreeClassifier(object):
 def find_split(X, y, feature_indices):
     """ Returns the best split rule for a tree node. """
 
-    num_features = X.shape[1]
+    #num_features = X.shape[1]#？？？
 
-    best_gain = 0
+    best_gain = gini(y)
     best_feature_index = 0
     best_threshold = 0
+    #阈值？
     for feature_index in feature_indices:
         values = sorted(set(X[:, feature_index])) ### better way
-
+        #对某一个特征中的值得集合进行排序
         for j in range(len(values) - 1):
             threshold = (values[j] + values[j+1])/2
             X_true, y_true, X_false, y_false = split(X, y, feature_index, threshold)
-            gain = information_gain(y, y_true, y_false)
+            # gain = information_gain(y, y_true, y_false)
 
-            if gain > best_gain:
-                best_gain = gain
+            gini_gain = gini_index(y, y_true, y_false)
+            if gini_gain < best_gain:
+                best_gain = gini_gain
                 best_feature_index = feature_index
                 best_threshold = threshold
 
@@ -148,12 +153,17 @@ def load_traindata(filepath):
 
 if __name__ == '__main__': 
     from sklearn.model_selection import train_test_split
-    dataset = load_traindata(r'wine.txt')
+    # dataset = load_traindata(r'wine.txt')
+    dataset = load_traindata(r'adlutcode.csv')
     train_data = dataset.iloc[:,[0,1,2,3,4,5,6,7,8,9,10,11,12]].values
     train_target = dataset.iloc[:,[13]].values
     X_train, X_test, y_train, y_test =  train_test_split(train_data, train_target,test_size=0.3, random_state=42)
+    print(X_train)
+    print(X_test)
     tree = DecisionTreeClassifier()
     tree.fit(X_train, y_train.ravel())
+    print("2")
     y_pred_rf = tree.predict(X_test)
+    print("3")
     y_true_rf = y_test.ravel()
     print('Accuracy = ', accuracy_score(y_true_rf, y_pred_rf))
